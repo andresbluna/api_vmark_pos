@@ -1,9 +1,9 @@
 package com.vmark.pos.model;
 
 import jakarta.persistence.*;
-
 import java.math.BigDecimal;
 import java.util.Date;
+
 
 @Entity
 @Table(name = "VMARK_COMPRAS_PROVEEDORES")
