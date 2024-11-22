@@ -19,29 +19,4 @@ public class EmpleadoService {
         this.empleadoRepository = empleadoRepository;
     }
 
-    public Empleado crearEmpleado(Empleado empleado) {
-        return empleadoRepository.save(empleado);
-    }
-
-    public List<Empleado> obtenerTodosLosEmpleados() {
-        return empleadoRepository.findAll();
-    }
-
-    public Optional<Empleado> obtenerEmpleadoPorId(Long id) {
-        return empleadoRepository.findById(id);
-    }
-
-    public Empleado actualizarEmpleado(Long id, Empleado empleadoDetalles) {
-        if (empleadoRepository.existsById(id)) {
-            empleadoDetalles.setEmpleadoId(id);
-            return empleadoRepository.save(empleadoDetalles);
-        }
-        return null;
-    }
-
-    public void eliminarEmpleado(Long id) {
-        if (empleadoRepository.existsById(id)) {
-            empleadoRepository.deleteById(id);
-        }
-    }
 }

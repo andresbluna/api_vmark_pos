@@ -5,6 +5,8 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
+import java.math.BigDecimal;
+
 
 @Entity
 @Table(name = "VMARK_BOLETA")
@@ -20,7 +22,7 @@ public class Boleta {
     private Integer cantidad;
 
     @Column(name = "PRECIO_UNITARIO", nullable = false, precision = 10, scale = 2)
-    private Double precioUnitario;
+    private BigDecimal precioUnitario;
 
     @Column(name = "PRODUCTO_ID", nullable = false)
     private Long productoId;
@@ -33,7 +35,7 @@ public class Boleta {
     }
 
     // Constructor con todos los campos
-    public Boleta(Long id, Integer cantidad, Double precioUnitario, Long productoId, Long ventaId) {
+    public Boleta(Long id, Integer cantidad, BigDecimal precioUnitario, Long productoId, Long ventaId) {
         this.id = id;
         this.cantidad = cantidad;
         this.precioUnitario = precioUnitario;
@@ -58,11 +60,11 @@ public class Boleta {
         this.cantidad = cantidad;
     }
 
-    public Double getPrecioUnitario() {
+    public BigDecimal getPrecioUnitario() {
         return precioUnitario;
     }
 
-    public void setPrecioUnitario(Double precioUnitario) {
+    public void setPrecioUnitario(BigDecimal precioUnitario) {
         this.precioUnitario = precioUnitario;
     }
 
