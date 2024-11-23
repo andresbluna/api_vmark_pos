@@ -5,6 +5,18 @@ import jakarta.persistence.*;
 import java.util.Date;
 
 @Entity
+@NamedStoredProcedureQuery(
+        name = "Empleado.validarLogin",
+        procedureName = "sp_validar_login",
+        parameters = {
+                @StoredProcedureParameter(mode = ParameterMode.IN, name = "p_nombre_empleado", type = String.class),
+                @StoredProcedureParameter(mode = ParameterMode.IN, name = "p_contrasena", type = String.class),
+                @StoredProcedureParameter(mode = ParameterMode.OUT, name = "p_empleado_id", type = Long.class),
+                @StoredProcedureParameter(mode = ParameterMode.OUT, name = "p_rol_id", type = Long.class),
+                @StoredProcedureParameter(mode = ParameterMode.OUT, name = "p_is_valid", type = Integer.class),
+                @StoredProcedureParameter(mode = ParameterMode.OUT, name = "p_mensaje", type = String.class)
+        }
+)
 @Table(name = "VMARK_EMPLEADOS_2")
 public class Empleado {
 
