@@ -4,6 +4,8 @@
     import com.vmark.pos.model.Venta;
     import com.vmark.pos.repository.EmpleadoRepository;
     import com.vmark.pos.repository.VentaRepository;
+    import jakarta.transaction.Transactional;
+    import lombok.extern.slf4j.Slf4j;
     import org.springframework.beans.factory.annotation.Autowired;
     import org.springframework.jdbc.core.JdbcTemplate;
     import org.springframework.stereotype.Service;
@@ -19,6 +21,8 @@
 
 
     @Service
+    @Slf4j
+    @Transactional
     public class VentaService {
 
         private final JdbcTemplate jdbcTemplate;
@@ -62,33 +66,16 @@
             nuevaVenta.setMetodoPago(metodoPago);
             nuevaVenta.setEmpleado(empleado);
 
-            // Guardar la venta
             Venta ventaGuardada = ventaRepository.save(nuevaVenta);
-
-            // Retornar el monto total como resultado
             return ventaGuardada.getMontoTotal();
         }
 
         public BigDecimal calcularPromedioSemanal() {
-            // Obtener la fecha de hace 7 días
-            Calendar cal = Calendar.getInstance();
-            cal.add(Calendar.DATE, -7);
-            Date fechaInicio = cal.getTime();
-
-            // Obtener las ventas de los últimos 7 días
-            List<Venta> ventasSemanales = ventaRepository.findByFechaVentaAfter(fechaInicio);
-
-            // Calcular el promedio
-            if (ventasSemanales.isEmpty()) {
-                return BigDecimal.ZERO; // Si no hay ventas, el promedio es 0
+            try {
+                return ventaRepository.obtenerPromedioSemanal();
+            } catch (Exception e) {
+                log.error("Error al calcular el promedio semanal: ", e);
+                return BigDecimal.ZERO;
             }
-
-            BigDecimal sumaTotal = ventasSemanales.stream()
-                    .map(Venta::getMontoTotal)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-            return sumaTotal.divide(new BigDecimal(ventasSemanales.size()), 2, RoundingMode.HALF_UP);
         }
-
-
     }

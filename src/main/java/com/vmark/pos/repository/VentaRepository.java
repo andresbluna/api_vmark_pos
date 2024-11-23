@@ -12,4 +12,7 @@ import java.util.List;
 public interface VentaRepository extends JpaRepository<Venta, Long> {
     List<Venta> findByFechaVentaAfter(Date fecha);
 
+    @Query(value = "SELECT calcular_promedio_semanal() FROM DUAL", nativeQuery = true)
+    BigDecimal obtenerPromedioSemanal();
+
 }
