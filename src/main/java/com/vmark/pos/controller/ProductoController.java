@@ -1,13 +1,12 @@
 package com.vmark.pos.controller;
 
-import com.vmark.pos.model.Producto;
 import com.vmark.pos.service.ProductoService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/productos")
@@ -20,34 +19,14 @@ public class ProductoController {
         this.productoService = productoService;
     }
 
-    @PostMapping
-    public ResponseEntity<Producto> crearProducto(@RequestBody Producto producto) {
-        Producto nuevoProducto = productoService.crearProducto(producto);
-        return new ResponseEntity<>(nuevoProducto, HttpStatus.CREATED);
-    }
+    @GetMapping("/stock-bajo")
+    public ResponseEntity<Map<String, Object>> verificarStockBajo() {
+        Map<String, Object> resultado = productoService.verificarStockBajo();
 
-    @GetMapping
-    public ResponseEntity<List<Producto>> obtenerTodosLosProductos() {
-        List<Producto> productos = productoService.obtenerTodosLosProductos();
-        return new ResponseEntity<>(productos, HttpStatus.OK);
-    }
+        if ("error".equals(resultado.get("status"))) {
+            return ResponseEntity.internalServerError().body(resultado);
+        }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<Producto> obtenerProductoPorId(@PathVariable Long id) {
-        return productoService.obtenerProductoPorId(id)
-                .map(producto -> new ResponseEntity<>(producto, HttpStatus.OK))
-                .orElse(new ResponseEntity<>(HttpStatus.NOT_FOUND));
-    }
-
-    @PutMapping("/{id}")
-    public ResponseEntity<Producto> actualizarProducto(@PathVariable Long id, @RequestBody Producto productoDetalles) {
-        Producto productoActualizado = productoService.actualizarProducto(id, productoDetalles);
-        return new ResponseEntity<>(productoActualizado, HttpStatus.OK);
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> eliminarProducto(@PathVariable Long id) {
-        productoService.eliminarProducto(id);
-        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        return ResponseEntity.ok(resultado);
     }
 }

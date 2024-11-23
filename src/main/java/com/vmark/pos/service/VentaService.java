@@ -7,17 +7,15 @@
     import jakarta.transaction.Transactional;
     import lombok.extern.slf4j.Slf4j;
     import org.springframework.beans.factory.annotation.Autowired;
+    import org.springframework.http.HttpStatus;
+    import org.springframework.http.ResponseEntity;
     import org.springframework.jdbc.core.JdbcTemplate;
     import org.springframework.stereotype.Service;
 
     import java.math.BigDecimal;
-    import java.math.RoundingMode;
-    import java.time.LocalDate;
-    import java.time.temporal.TemporalAdjusters;
-    import java.util.Calendar;
-    import java.util.Date;
-    import java.util.List;
-    import java.util.Optional;
+    import java.time.LocalDateTime;
+    import java.time.ZoneId;
+    import java.util.*;
 
 
     @Service
@@ -37,28 +35,27 @@
             this.ventaRepository = ventaRepository;
         }
 
-
-        public Double obtenerPromedioVentaDiaria() {
-            String sql = "SELECT promedio_venta_diaria FROM dual";
-            return jdbcTemplate.queryForObject(sql, Double.class);
-        }
-
         public BigDecimal crearVenta(Date fechaVenta, BigDecimal montoTotal, String metodoPago, Long empleadoId) {
-            // Validar datos de entrada
-            if (fechaVenta == null || montoTotal == null || metodoPago == null || empleadoId == null) {
+            // Validaciones de parámetros
+            if (montoTotal == null || metodoPago == null || empleadoId == null) {
                 throw new IllegalArgumentException("Todos los campos son obligatorios.");
             }
+
             if (montoTotal.compareTo(BigDecimal.ZERO) <= 0) {
                 throw new IllegalArgumentException("El monto total debe ser mayor a 0.");
             }
 
-            // Validar que el empleado existe
+            // Generar fecha actual
+            LocalDateTime fechaActual = LocalDateTime.now();
+            fechaVenta = Date.from(fechaActual.atZone(ZoneId.systemDefault()).toInstant());
+
+            // Buscar empleado
             Optional<Empleado> empleadoOpt = empleadoRepository.findById(empleadoId);
             if (empleadoOpt.isEmpty()) {
                 throw new IllegalArgumentException("El empleado con ID " + empleadoId + " no existe.");
             }
 
-            // Crear la venta
+            // Crear y guardar la venta
             Empleado empleado = empleadoOpt.get();
             Venta nuevaVenta = new Venta();
             nuevaVenta.setFechaVenta(fechaVenta);
@@ -66,16 +63,60 @@
             nuevaVenta.setMetodoPago(metodoPago);
             nuevaVenta.setEmpleado(empleado);
 
+            // Guardar y retornar
             Venta ventaGuardada = ventaRepository.save(nuevaVenta);
             return ventaGuardada.getMontoTotal();
         }
 
-        public BigDecimal calcularPromedioSemanal() {
+
+        public BigDecimal calcularTotalPorRango(Date fechaInicio, Date fechaFin) {
             try {
-                return ventaRepository.obtenerPromedioSemanal();
+                if (fechaInicio == null || fechaFin == null) {
+                    log.error("Las fechas no pueden ser nulas");
+                    return BigDecimal.ZERO;
+                }
+                return ventaRepository.calcularTotalPorRango(fechaInicio, fechaFin);
             } catch (Exception e) {
-                log.error("Error al calcular el promedio semanal: ", e);
+                log.error("Error al calcular el total por rango: ", e);
                 return BigDecimal.ZERO;
             }
         }
+
+        public BigDecimal calcularPromedioPorRango(Date fechaInicio, Date fechaFin) {
+            try {
+                if (fechaInicio == null || fechaFin == null) {
+                    log.error("Las fechas no pueden ser nulas");
+                    return BigDecimal.ZERO;
+                }
+
+                return ventaRepository.calcularPromedioPorRango(fechaInicio, fechaFin);
+            } catch (Exception e) {
+                log.error("Error al calcular el promedio por rango: ", e);
+                return BigDecimal.ZERO;
+            }
+        }
+
+        public ResponseEntity<?> obtenerVentasHoy() {
+            try {
+                Integer cantidadVentas = ventaRepository.contarVentasHoy();
+
+                Map<String, Object> response = new HashMap<>();
+                response.put("status", "success");
+                response.put("message", "Consulta exitosa");
+                response.put("cantidadVentas", cantidadVentas);
+
+                return ResponseEntity.ok(response);
+            } catch (Exception e) {
+                log.error("Error al obtener cantidad de ventas del día: " + e.getMessage());
+
+                Map<String, Object> response = new HashMap<>();
+                response.put("status", "error");
+                response.put("message", "Error al obtener cantidad de ventas");
+                response.put("error", e.getMessage());
+
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+            }
+        }
+
+
     }

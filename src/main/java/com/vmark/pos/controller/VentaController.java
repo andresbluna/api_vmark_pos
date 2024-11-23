@@ -2,6 +2,7 @@ package com.vmark.pos.controller;
 
 import com.vmark.pos.service.VentaService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -11,17 +12,13 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/ventas")
-public class VentaController {private final VentaService ventaService;
+public class VentaController {
+
+    private final VentaService ventaService;
 
     @Autowired
     public VentaController(VentaService ventaService) {
         this.ventaService = ventaService;
-    }
-
-    @GetMapping("/promedio-diario")
-    public ResponseEntity<Double> obtenerPromedioVentaDiaria() {
-        Double promedio = ventaService.obtenerPromedioVentaDiaria();
-        return ResponseEntity.ok(promedio);
     }
 
     @PostMapping("/crear")
@@ -32,7 +29,6 @@ public class VentaController {private final VentaService ventaService;
             String metodoPago = requestBody.get("metodoPago").toString();
             Long empleadoId = Long.parseLong(requestBody.get("empleadoId").toString());
 
-
             BigDecimal montoRegistrado = ventaService.crearVenta(fechaVenta, montoTotal, metodoPago, empleadoId);
 
             return ResponseEntity.ok(montoRegistrado);
@@ -41,9 +37,27 @@ public class VentaController {private final VentaService ventaService;
         }
     }
 
-    @GetMapping("/promedio-semanal")
-    public ResponseEntity<BigDecimal> obtenerPromedioSemanal() {
-        BigDecimal promedio = ventaService.calcularPromedioSemanal();
+
+    @GetMapping("/total-por-rango")
+    public ResponseEntity<BigDecimal> obtenerTotalPorRango(
+            @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") Date fechaInicio,
+            @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") Date fechaFin) {
+        BigDecimal total = ventaService.calcularTotalPorRango(fechaInicio, fechaFin);
+        return ResponseEntity.ok(total);
+    }
+
+    @GetMapping("/promedio-por-rango")
+    public ResponseEntity<BigDecimal> obtenerPromedioPorRango(
+            @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") Date fechaInicio,
+            @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") Date fechaFin) {
+        BigDecimal promedio = ventaService.calcularPromedioPorRango(fechaInicio, fechaFin);
         return ResponseEntity.ok(promedio);
     }
+
+    @GetMapping("/contar-hoy")
+    public ResponseEntity<?> contarVentasHoy() {
+        return ventaService.obtenerVentasHoy();
+    }
+
+
 }

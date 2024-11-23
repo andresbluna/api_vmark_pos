@@ -2,11 +2,15 @@ package com.vmark.pos.service;
 
 import com.vmark.pos.model.Producto;
 import com.vmark.pos.repository.ProductoRepository;
+import jakarta.persistence.ParameterMode;
+import jakarta.persistence.StoredProcedureQuery;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
+
+import static com.vmark.pos.repository.VentaRepository.entityManager;
 
 
 @Service
@@ -18,32 +22,45 @@ public class ProductoService {
         this.productoRepository = productoRepository;
     }
 
-    public Producto crearProducto(Producto producto) {
-        return productoRepository.save(producto);
-    }
+    public Map<String, Object> verificarStockBajo() {
+        Map<String, Object> resultado = new HashMap<>();
 
-    public List<Producto> obtenerTodosLosProductos() {
-        return productoRepository.findAll();
-    }
+        try {
+            StoredProcedureQuery query = entityManager
+                    .createStoredProcedureQuery("sp_obtener_stock_bajo")
+                    .registerStoredProcedureParameter(
+                            1,
+                            Class.class,
+                            ParameterMode.REF_CURSOR
+                    );
 
-    public Optional<Producto> obtenerProductoPorId(Long id) {
-        return productoRepository.findById(id);
-    }
+            query.execute();
+            List<Object[]> productos = query.getResultList();
 
-    public Producto actualizarProducto(Long id, Producto productoDetalles) {
-        Producto producto = productoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Producto no encontrado con id: " + id));
+            if (!productos.isEmpty()) {
+                List<Map<String, Object>> productosDetalle = productos.stream()
+                        .map(producto -> {
+                            Map<String, Object> detalle = new HashMap<>();
+                            detalle.put("nombre", producto[0]);
+                            detalle.put("stock", producto[1]);
+                            return detalle;
+                        })
+                        .collect(Collectors.toList());
 
-        producto.setNombre(productoDetalles.getNombre());
-        producto.setDescripcion(productoDetalles.getDescripcion());
-        producto.setPrecio(productoDetalles.getPrecio());
-        producto.setStock(productoDetalles.getStock());
-        producto.setCategoriaId(productoDetalles.getCategoriaId());
+                resultado.put("mensaje", "¡Alerta! Hay productos con stock bajo");
+                resultado.put("productos", productosDetalle);
+            } else {
+                resultado.put("mensaje", "No hay productos con stock bajo");
+                resultado.put("productos", Collections.emptyList());
+            }
 
-        return productoRepository.save(producto);
-    }
+            resultado.put("status", "success");
 
-    public void eliminarProducto(Long id) {
-        productoRepository.deleteById(id);
+        } catch (Exception e) {
+            resultado.put("status", "error");
+            resultado.put("mensaje", "Error al verificar stock: " + e.getMessage());
+        }
+
+        return resultado;
     }
 }
