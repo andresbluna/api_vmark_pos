@@ -1,14 +1,16 @@
 package com.vmark.pos.controller;
 
+import com.vmark.pos.dto.VentaRequestDTO;
 import com.vmark.pos.service.VentaService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.util.Date;
-import java.util.Map;
+import java.util.HashMap;
 
 @RestController
 @RequestMapping("/api/ventas")
@@ -21,19 +23,15 @@ public class VentaController {
         this.ventaService = ventaService;
     }
 
-    @PostMapping("/crear")
-    public ResponseEntity<BigDecimal> crearVenta(@RequestBody Map<String, Object> requestBody) {
+    @PostMapping("/crear-venta")
+    public ResponseEntity<?> crearVenta(@RequestBody VentaRequestDTO request) {
         try {
-            Date fechaVenta = new Date((Long) requestBody.get("fechaVenta"));
-            BigDecimal montoTotal = new BigDecimal(requestBody.get("montoTotal").toString());
-            String metodoPago = requestBody.get("metodoPago").toString();
-            Long empleadoId = Long.parseLong(requestBody.get("empleadoId").toString());
-
-            BigDecimal montoRegistrado = ventaService.crearVenta(fechaVenta, montoTotal, metodoPago, empleadoId);
-
-            return ResponseEntity.ok(montoRegistrado);
+            String resultado = ventaService.crearVenta(request);
+            return ResponseEntity.ok(new HashMap<String, String>() {{
+                put("mensaje", resultado);
+            }});
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(null);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
         }
     }
 

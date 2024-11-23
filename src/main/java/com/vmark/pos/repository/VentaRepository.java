@@ -17,12 +17,13 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
     @Autowired
     EntityManager entityManager = null;
 
-    @Procedure(name = "crear_venta")
-    BigDecimal crearVenta(
-            @Param("p_fecha_venta") Date fechaVenta,
-            @Param("p_monto_total") BigDecimal montoTotal,
+    @Procedure(name = "SP_CREAR_VENTA")  // Nombre exacto del procedimiento
+    String SP_CREAR_VENTA(
+            @Param("p_empleado_id") Long empleadoId,
             @Param("p_metodo_pago") String metodoPago,
-            @Param("p_empleado_id") Long empleadoId
+            @Param("p_cantidades") String cantidades,
+            @Param("p_precios") String precios,
+            @Param("p_productos_id") String productosId
     );
 
     @Query(value = "SELECT calcular_promedio_por_rango(:fechaInicio, :fechaFin) FROM DUAL", nativeQuery = true)
@@ -39,9 +40,6 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
 
     @Query(value = "SELECT COUNT(*) FROM VMARK_VENTAS_2 WHERE TRUNC(FECHA_VENTA) = TRUNC(SYSDATE)", nativeQuery = true)
     Integer contarVentasHoy();
-
-
-
 
 }
 

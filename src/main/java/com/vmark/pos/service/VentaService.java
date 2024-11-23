@@ -1,9 +1,14 @@
     package com.vmark.pos.service;
 
+    import com.vmark.pos.dto.VentaRequestDTO;
     import com.vmark.pos.model.Empleado;
     import com.vmark.pos.model.Venta;
     import com.vmark.pos.repository.EmpleadoRepository;
     import com.vmark.pos.repository.VentaRepository;
+    import jakarta.persistence.EntityManager;
+    import jakarta.persistence.ParameterMode;
+    import jakarta.persistence.PersistenceContext;
+    import jakarta.persistence.StoredProcedureQuery;
     import jakarta.transaction.Transactional;
     import lombok.extern.slf4j.Slf4j;
     import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +21,10 @@
     import java.time.LocalDateTime;
     import java.time.ZoneId;
     import java.util.*;
+    import java.util.function.Function;
+    import java.util.stream.Collectors;
+
+    import static com.vmark.pos.repository.VentaRepository.entityManager;
 
 
     @Service
@@ -29,43 +38,59 @@
         @Autowired
         private final VentaRepository ventaRepository;
 
+        @PersistenceContext
+        private EntityManager entityManager;
+
         public VentaService(JdbcTemplate jdbcTemplate, EmpleadoRepository empleadoRepository, VentaRepository ventaRepository) {
             this.jdbcTemplate = jdbcTemplate;
             this.empleadoRepository = empleadoRepository;
             this.ventaRepository = ventaRepository;
         }
 
-        public BigDecimal crearVenta(Date fechaVenta, BigDecimal montoTotal, String metodoPago, Long empleadoId) {
-            // Validaciones de parámetros
-            if (montoTotal == null || metodoPago == null || empleadoId == null) {
-                throw new IllegalArgumentException("Todos los campos son obligatorios.");
+        public String crearVenta(VentaRequestDTO request) {
+            try {
+                // Conversión de listas a cadenas asegurando formato numérico
+                String cantidades = request.getCantidades().stream()
+                        .map(cantidad -> String.valueOf(cantidad))
+                        .collect(Collectors.joining(","));
+
+                String precios = request.getPrecios().stream()
+                        .map(precio -> String.format("%.2f", precio))
+                        .collect(Collectors.joining(","));
+
+                String productosId = request.getProductosId().stream()
+                        .map(String::valueOf)
+                        .collect(Collectors.joining(","));
+
+                // Debug para verificar valores
+                System.out.println("EmpleadoID: " + request.getEmpleadoId());
+                System.out.println("Método Pago: " + request.getMetodoPago());
+                System.out.println("Cantidades: " + cantidades);
+                System.out.println("Precios: " + precios);
+                System.out.println("ProductosID: " + productosId);
+
+                // Llamar al procedimiento almacenado usando EntityManager
+                StoredProcedureQuery query = entityManager
+                        .createStoredProcedureQuery("SP_CREAR_VENTA")
+                        .registerStoredProcedureParameter("p_empleado_id", Long.class, ParameterMode.IN)
+                        .registerStoredProcedureParameter("p_metodo_pago", String.class, ParameterMode.IN)
+                        .registerStoredProcedureParameter("p_cantidades", String.class, ParameterMode.IN)
+                        .registerStoredProcedureParameter("p_precios", String.class, ParameterMode.IN)
+                        .registerStoredProcedureParameter("p_productos_id", String.class, ParameterMode.IN)
+                        .registerStoredProcedureParameter("p_resultado", String.class, ParameterMode.OUT)
+                        .setParameter("p_empleado_id", request.getEmpleadoId())
+                        .setParameter("p_metodo_pago", request.getMetodoPago())
+                        .setParameter("p_cantidades", cantidades)
+                        .setParameter("p_precios", precios)
+                        .setParameter("p_productos_id", productosId);
+
+                query.execute();
+                String resultado = (String) query.getOutputParameterValue("p_resultado");
+                return resultado != null ? resultado : "Venta creada exitosamente";
+
+            } catch (Exception e) {
+                throw new RuntimeException("Error al crear venta: " + e.getMessage(), e);
             }
-
-            if (montoTotal.compareTo(BigDecimal.ZERO) <= 0) {
-                throw new IllegalArgumentException("El monto total debe ser mayor a 0.");
-            }
-
-            // Generar fecha actual
-            LocalDateTime fechaActual = LocalDateTime.now();
-            fechaVenta = Date.from(fechaActual.atZone(ZoneId.systemDefault()).toInstant());
-
-            // Buscar empleado
-            Optional<Empleado> empleadoOpt = empleadoRepository.findById(empleadoId);
-            if (empleadoOpt.isEmpty()) {
-                throw new IllegalArgumentException("El empleado con ID " + empleadoId + " no existe.");
-            }
-
-            // Crear y guardar la venta
-            Empleado empleado = empleadoOpt.get();
-            Venta nuevaVenta = new Venta();
-            nuevaVenta.setFechaVenta(fechaVenta);
-            nuevaVenta.setMontoTotal(montoTotal);
-            nuevaVenta.setMetodoPago(metodoPago);
-            nuevaVenta.setEmpleado(empleado);
-
-            // Guardar y retornar
-            Venta ventaGuardada = ventaRepository.save(nuevaVenta);
-            return ventaGuardada.getMontoTotal();
         }
 
 
