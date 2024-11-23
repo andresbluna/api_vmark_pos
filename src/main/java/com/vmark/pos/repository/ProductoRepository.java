@@ -11,11 +11,7 @@ import java.util.List;
 
 public interface ProductoRepository extends JpaRepository<Producto, Long> {
 
-    @Query(value = "SELECT fn_contar_stock_bajo FROM DUAL", nativeQuery = true)
-    Integer contarProductosStockBajo();
-
-    @Procedure(procedureName = "sp_obtener_stock_bajo")
-    void obtenerProductosStockBajo(CallableStatement statement) throws SQLException;
-
+    @Query(value = "SELECT * FROM VMARK_PRODUCTOS WHERE STOCK < 10", nativeQuery = true)
+    List<Object[]> findProductosStockBajo();
 
 }

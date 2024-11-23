@@ -22,32 +22,27 @@ public class ProductoService {
         this.productoRepository = productoRepository;
     }
 
-    public Map<String, Object> verificarStockBajo() {
+    public Map<String, Object> obtenerProductosStockBajo() {
         Map<String, Object> resultado = new HashMap<>();
 
         try {
-            StoredProcedureQuery query = entityManager
-                    .createStoredProcedureQuery("sp_obtener_stock_bajo")
-                    .registerStoredProcedureParameter(
-                            1,
-                            Class.class,
-                            ParameterMode.REF_CURSOR
-                    );
-
-            query.execute();
-            List<Object[]> productos = query.getResultList();
+            List<Object[]> productos = productoRepository.findProductosStockBajo();
 
             if (!productos.isEmpty()) {
                 List<Map<String, Object>> productosDetalle = productos.stream()
                         .map(producto -> {
                             Map<String, Object> detalle = new HashMap<>();
-                            detalle.put("nombre", producto[0]);
-                            detalle.put("stock", producto[1]);
+                            detalle.put("productoId", producto[0]);
+                            detalle.put("nombre", producto[1]);
+                            detalle.put("descripcion", producto[2]);
+                            detalle.put("precio", producto[3]);
+                            detalle.put("stock", producto[4]);
+                            detalle.put("categoriaId", producto[5]);
                             return detalle;
                         })
                         .collect(Collectors.toList());
 
-                resultado.put("mensaje", "¡Alerta! Hay productos con stock bajo");
+                resultado.put("mensaje", "¡Alerta! Hay " + productos.size() + " productos con stock bajo");
                 resultado.put("productos", productosDetalle);
             } else {
                 resultado.put("mensaje", "No hay productos con stock bajo");

@@ -20,8 +20,8 @@ public class ProductoController {
     }
 
     @GetMapping("/stock-bajo")
-    public ResponseEntity<Map<String, Object>> verificarStockBajo() {
-        Map<String, Object> resultado = productoService.verificarStockBajo();
+    public ResponseEntity<Map<String, Object>> obtenerProductosStockBajo() {
+        Map<String, Object> resultado = productoService.obtenerProductosStockBajo();
 
         if ("error".equals(resultado.get("status"))) {
             return ResponseEntity.internalServerError().body(resultado);
