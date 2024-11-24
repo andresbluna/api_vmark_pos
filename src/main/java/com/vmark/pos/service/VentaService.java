@@ -49,17 +49,17 @@
 
         public String crearVenta(VentaRequestDTO request) {
             try {
-                // Conversión de listas a cadenas asegurando formato numérico
+                // Conversión de listas a cadenas asegurando formato numérico correcto
                 String cantidades = request.getCantidades().stream()
-                        .map(cantidad -> String.valueOf(cantidad))
+                        .map(Object::toString)
                         .collect(Collectors.joining(","));
 
                 String precios = request.getPrecios().stream()
-                        .map(precio -> String.format("%.2f", precio))
+                        .map(precio -> String.valueOf(precio))  // Conversión simple a string
                         .collect(Collectors.joining(","));
 
                 String productosId = request.getProductosId().stream()
-                        .map(String::valueOf)
+                        .map(Object::toString)
                         .collect(Collectors.joining(","));
 
                 // Debug para verificar valores
@@ -72,13 +72,15 @@
                 // Llamar al procedimiento almacenado usando EntityManager
                 StoredProcedureQuery query = entityManager
                         .createStoredProcedureQuery("SP_CREAR_VENTA")
-                        .registerStoredProcedureParameter("p_empleado_id", Long.class, ParameterMode.IN)
+                        .registerStoredProcedureParameter("p_empleado_id", Integer.class, ParameterMode.IN)
                         .registerStoredProcedureParameter("p_metodo_pago", String.class, ParameterMode.IN)
                         .registerStoredProcedureParameter("p_cantidades", String.class, ParameterMode.IN)
                         .registerStoredProcedureParameter("p_precios", String.class, ParameterMode.IN)
                         .registerStoredProcedureParameter("p_productos_id", String.class, ParameterMode.IN)
-                        .registerStoredProcedureParameter("p_resultado", String.class, ParameterMode.OUT)
-                        .setParameter("p_empleado_id", request.getEmpleadoId())
+                        .registerStoredProcedureParameter("p_resultado", String.class, ParameterMode.OUT);
+
+                // Establecer parámetros con validación
+                query.setParameter("p_empleado_id", request.getEmpleadoId())
                         .setParameter("p_metodo_pago", request.getMetodoPago())
                         .setParameter("p_cantidades", cantidades)
                         .setParameter("p_precios", precios)
@@ -89,11 +91,11 @@
                 return resultado != null ? resultado : "Venta creada exitosamente";
 
             } catch (Exception e) {
+                log.error("Error en la creación de venta: ", e);
                 throw new RuntimeException("Error al crear venta: " + e.getMessage(), e);
             }
         }
-
-
+        
         public BigDecimal calcularTotalPorRango(Date fechaInicio, Date fechaFin) {
             try {
                 if (fechaInicio == null || fechaFin == null) {
